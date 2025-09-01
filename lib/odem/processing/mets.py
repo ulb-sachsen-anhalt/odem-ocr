@@ -85,10 +85,12 @@ class ODEMMetadataInspecteur:
         Stop if data corrupt, ill or bad
         """
         self.__set_reader()
+        if self._reader is None:
+            raise ODEMMetadataMetsException("Invalid METS reader None")
         report = self._reader.report
         if report is None:
             raise ODEMMetadataMetsException("Invalid METS report None")
-        if not report.type:
+        if not report.logical_type:
             raise ODEMNoTypeForOCRException(f"{self.process_identifier} found no logical type")
         prime_report = report.prime_report
         if prime_report is None:
@@ -176,10 +178,10 @@ class ODEMMetadataInspecteur:
         """Get type information"""
         if self._reader is None:
             raise ODEMMetadataMetsException
-        log_type = self._reader.report.type
+        log_type = self._reader.report.logical_type
         if self._report is None:
             raise ODEMMetadataMetsException
-        prime_type = self._report.type
+        prime_type = self._report.dmd_type
         return (log_type, prime_type)
 
     def __inspect_metadata_images(self):

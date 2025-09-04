@@ -2,14 +2,14 @@
 
 ![Python application](https://github.com/ulb-sachsen-anhalt/ocrd-odem/actions/workflows/python-app.yml/badge.svg)
 
-Implementation Project of the University and State Library Sachsen-Anhalt (ULB Sachsen-Anhalt) for [OCR-D-Phase III](https://ocr-d.de/de/phase3) founded by [DFG](https://gepris.dfg.de/gepris/projekt/460554747) 2021-2024 to generate fulltext for existing digitalisates of ["Drucke des 18. Jahrhunderts (VD18)"](https://opendata.uni-halle.de/handle/1981185920/31824). More information can be found in ["API Magazin Bd. 6 Nr. 1 (2025)"](https://journals.sub.uni-hamburg.de/hup3/apimagazin/issue/view/15) ["Volltext für digitale Sammlungen separat erzeugen"](https://doi.org/10.15460/apimagazin.2025.6.1.221).
+Implementation Project of the University and State Library Sachsen-Anhalt (ULB Sachsen-Anhalt) for [OCR-D-Phase III](https://ocr-d.de/de/phase3) founded by [DFG](https://gepris.dfg.de/gepris/projekt/460554747) 2021-2024 to generate fulltext for existing digital images of ["Drucke des 18. Jahrhunderts (VD18)"](https://opendata.uni-halle.de/handle/1981185920/31824). More information can be found in ["API Magazin Bd. 6 Nr. 1 (2025)"](https://journals.sub.uni-hamburg.de/hup3/apimagazin/issue/view/15) ["Volltext für digitale Sammlungen separat erzeugen"](https://doi.org/10.15460/apimagazin.2025.6.1.221).
 
 
-Digitized prints are accessed as records via [OAI-PMH](https://www.openarchives.org/pmh/) from a record list which. Corresponding images are load to a local worker machine, then each page is processed individually with a complete OCR-D-Workflow. Afterwards, the results are transformed into ALTO-OCR and an archive file containing a new complete PDF for the print with textlayer is generated. The resulting archive file complies to the [SAF fileformat](https://wiki.lyrasis.org/display/DSDOC6x/Importing+and+Exporting+Items+via+Simple+Archive+Format) of [DSpace-Systems](https://github.com/DSpace/DSpace) like [Share_it](https://opendata.uni-halle.de/).
+Digitized prints are accessed as records via [OAI-PMH](https://www.openarchives.org/pmh/) from a record list. Corresponding images are loaded to a local worker machine, then each page is processed individually passing through a complete OCR-D-Workflow. Subsequently, the results are transformed into ALTO-OCR and an archive file containing a new complete PDF for the print with textlayer is generated. The resulting archive file complies with the [SAF fileformat](https://wiki.lyrasis.org/display/DSDOC6x/Importing+and+Exporting+Items+via+Simple+Archive+Format) of [DSpace-Systems](https://github.com/DSpace/DSpace) like [Share_it](https://opendata.uni-halle.de/).
 
 ## Features
 
-* Process prints / directories on page level, so due errors only singles page is lost
+* Process prints / directories on page level, so only a single page is lost, if errors occur
 * Use metadata (`mods:language`) to match OCR model configuration
 * Use metadata (if present) to filter pages to process concerning logical and physical information
 * Monitor computing resources (RAM / disk space)
@@ -34,7 +34,9 @@ Digitized prints are accessed as records via [OAI-PMH](https://www.openarchives.
 git clone <repo-url> <local-dir>
 
 # setup python venv
-python3 -m venv venv
+python3.10 -m venv venv
+. venv/bin/activate
+# (venv) should be activated now
 pip install -U pip
 pip install -r requirements.txt
 
@@ -48,7 +50,7 @@ python -m pytest --cov=lib tests/ -v
 Since the overall workflow takes place in an isolated, local workspace, it's important to adjust
 the configuration properly to this local context.
 
-Configuration Options are grouped into 6 main sections:
+Configuration options are grouped into 6 main sections:
 
 * `[workflow]` : basic configuration of local work/log directories.  
    At least `[local_work_root]` and `[local_log_dir]` must be set accordingly.
@@ -58,7 +60,7 @@ Configuration Options are grouped into 6 main sections:
    Most critical options are `[model_mapping]` for mapping of `mods:language` to a OCR configuration, `[ocrd_resources_volumes]` for mapping local resources into each OCR-container and for OCR-D `[ocrd_process_list]` to define the ocr-d-processing steps
 * `[derivans]` : Derivans container image and configuration (optional)
 * `[export]` : Export asset and it's contents (optional)  
-   If export data requiered, set options `[export_tmp]` and `[export_dst]` to valid directories 
+   If export data required, set options `[export_tmp]` and `[export_dst]` to valid directories 
 
 See for example `resources/odem.local.example.ini`.
 
@@ -66,14 +68,11 @@ See for example `resources/odem.local.example.ini`.
 
 ### Local METS/MODS Mode
 
-Assumes local accessible directory containing metadata (METS/MODS-XML file) in `/home/ocr/data/digital-object-01` and local ODEM clone at `/home/ocr/odem` which contains adopted configurations under `resources/odem.record.local.ini`.
+Assumes local accessible directory containing metadata (METS/MODS-XML file) in `/home/ocr/data/digital-object-01` and local ODEM clone at `<local_dir>` which contains adopted configurations under `resources/odem.record.local.ini`.
 
 ```bash
 cd /home/ocr/odem
-python3.10 -m venv venv
-. venv/bin/activate
-pip install -U pip 
-pip install -r requirements.txt
+
 python cli_mets_local.py /home/ocr/data/digital-object-01/1234.xml -c resources/odem.record.local.ini
 ```
 

@@ -64,8 +64,8 @@ def _fixture_postprocessing_mets(tmp_path_factory):
     shutil.copyfile(orig_file, dst_mets)
     odem_cfg = fixture_configuration()
     odem_cfg.set(odem.CFG_SEC_METS, odem.CFG_SEC_METS_OPT_CLEAN, 'True')
-    odem_cfg.set(odem.CFG_SEC_METS, odem.CFG_SEC_METS_OPT_AGENTS,
-                 'DFG-OCRD3-ODEM_ocrd/all:2022-08-15')
+    odem_cfg.set(odem.CFG_SEC_METS, odem.CFG_SEC_METS_OPT_AGENT,
+                 'ODEM##ocrd/all:2022-08-15')
     odem.postprocess_mets(dst_mets, odem_cfg)
     odem_pm.process_mets_derivans_agents(dst_mets, odem_cfg)
     the_root = ET.parse(dst_mets).getroot()
@@ -90,10 +90,8 @@ def test_postprocess_mets_agent_odem_fits(post_mets):
     agent_odem = post_mets.xpath('//mets:agent', namespaces=df.XMLNS)[-1]
     xp_note = 'mets:note/text()'
     xp_name = 'mets:name/text()'
-    curr_image = fixture_configuration().get(odem.CFG_SEC_OCR, 'ocrd_baseimage')
-    assert agent_odem.xpath(xp_name, namespaces=df.XMLNS)[0] == f'DFG-OCRD3-ODEM_{curr_image}'
-    today = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
-    assert today in agent_odem.xpath(xp_note, namespaces=df.XMLNS)[0]
+    assert agent_odem.xpath(xp_name, namespaces=df.XMLNS)[0] == 'ODEM'
+    assert agent_odem.xpath(xp_note, namespaces=df.XMLNS)[0] == 'ocrd/all:2022-08-15'
 
 
 def test_postprocess_mets_agent_derivans_fits(post_mets):

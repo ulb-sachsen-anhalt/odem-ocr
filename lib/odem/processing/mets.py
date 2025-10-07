@@ -147,7 +147,7 @@ class ODEMMetadataInspecteur:
         ident_xpr = self._cfg.get(oc.CFG_SEC_METS,
                                   oc.CFG_SEC_METS_OPT_ID_XPR,
                                   fallback=None)
-        if ident_xpr is not None:
+        if ident_xpr is not None and self._reader is not None:
             idents = self._reader.xpath(ident_xpr)
             if len(idents) != 1:
                 the_msg = f"Invalid match {idents} for {ident_xpr} in {self.process_identifier}"
@@ -228,7 +228,7 @@ class ODEMMetadataInspecteur:
         export_name_xpr = self._cfg.get(oc.CFG_SEC_EXP,
                                   oc.CFG_SEC_EXP_OPT_NAME,
                                   fallback=None)
-        if export_name_xpr is not None:
+        if export_name_xpr is not None and self._reader is not None:
             export_names = self._reader.xpath(export_name_xpr)
             if len(export_names) != 1:
                 the_msg = f"Invalid {export_names} for {export_name_xpr} " \
@@ -264,6 +264,10 @@ def fname_ident_pairs_from_metadata(mets_root, images, blacklist_structs,
         if "." not in final_res_name: # sanitize jpg ext
             final_res_name += ".jpg"
         phys_cnt = _phys_container_for_id(phys_structs, file_id)
+        if phys_cnt is None:
+            problems.append(f"File {file_id} not linked")
+            continue
+        log_types = []
         try:
             log_types = _log_types_for_page(phys_cnt['ID'], structmap_links, log_structs)
         except ODEMMetadataMetsException as ome:
@@ -357,6 +361,7 @@ def integrate_ocr_file(xml_tree, ocr_files: typing.List):
             mproc = df.MetsProcessor(ocr_file)
             ns_map = _sanitize_namespaces(mproc.root)
             xpr_file_name = '//alto:sourceImageInformation/alto:fileName'
+            assert mproc.root is not None
             src_info = mproc.root.xpath(xpr_file_name, namespaces=ns_map)[0]
             src_info.text = f'{file_name}.jpg'
             page_elements = mproc.root.xpath('//alto:Page', namespaces=ns_map)
@@ -426,37 +431,37 @@ def postprocess_mets(mets_file, odem_config: configparser.ConfigParser):
     """wrap work related to processing METS/MODS
     * optional clear some ULB-DSpace entries which will otherwise lead
       to import artefacts
-    * optional enrich ODEM agent
+    * optional enrich custom agent
        here use schema <agent-label>##<agent-note> to insert both elements
 
     Please note:
         If not properly configured, skip executiom
     """
 
-    if odem_config.getboolean(oc.CFG_SEC_METS, oc.CFG_SEC_METS_OPT_CLEAN,
+    if odem_config.getboolean(oc.CFG_SEC_METS,
+                              oc.CFG_SEC_METS_OPT_CLEAN,
                               fallback=False):
         mproc = df.MetsProcessor(mets_file)
+        assert mproc.root is not None
         xp_dv_iif_or_sru = '//dv:links/*[local-name()="iiif" or local-name()="sru"]'
         old_dvs = mproc.root.xpath(xp_dv_iif_or_sru, namespaces=df.XMLNS)
         for old_dv in old_dvs:
             parent = old_dv.getparent()
             parent.remove(old_dv)
         mproc.write()
-
-    if odem_config.has_option(oc.CFG_SEC_METS, oc.CFG_SEC_METS_OPT_AGENTS):
-        agent_entries = odem_config.get(oc.CFG_SEC_METS,
-                                        oc.CFG_SEC_METS_OPT_AGENTS).split(',')
-        if len(agent_entries) > 0:
-            mproc = df.MetsProcessor(mets_file)
-            for agent_entry in agent_entries:
-                if '##' in agent_entry:
-                    agent_parts = agent_entry.split('##')
-                    agent_name = agent_parts[0]
-                    agent_note = agent_parts[1]
-                    mproc.enrich_agent(agent_name, agent_note)
-                else:
-                    mproc.enrich_agent(agent_entry)
-            mproc.write()
+    agent_entry = odem_config.get(oc.CFG_SEC_METS,
+                                  oc.CFG_SEC_METS_OPT_AGENT,
+                                  fallback="").strip()
+    if len(agent_entry) > 0:
+        mproc = df.MetsProcessor(mets_file)
+        if '##' in agent_entry:
+            agent_parts = agent_entry.split('##')
+            agent_name = agent_parts[0]
+            agent_note = agent_parts[1]
+            mproc.enrich_agent(agent_name, agent_note)
+        else:
+            mproc.enrich_agent(agent_entry)
+        mproc.write()
 
 
 def process_mets_derivans_agents(mets_file, odem_config: configparser.ConfigParser):
@@ -468,11 +473,13 @@ def process_mets_derivans_agents(mets_file, odem_config: configparser.ConfigPars
         it clears all Derivans agenten entries but this latest
     """
 
-    if not odem_config.getboolean(oc.CFG_SEC_METS, oc.CFG_SEC_METS_OPT_CLEAN,
-                              fallback=False):
+    if not odem_config.getboolean(oc.CFG_SEC_METS,
+                                  oc.CFG_SEC_METS_OPT_CLEAN,
+                                  fallback=False):
         return
     mproc = df.MetsProcessor(mets_file)
-    xp_txt_derivans = '//mets:agent[contains(mets:name,"DigitalDerivans")]'
+    xp_txt_derivans = '//mets:agent[contains(mets:name,"Derivans")]'
+    assert mproc.root is not None
     derivanses = mproc.root.xpath(xp_txt_derivans, namespaces=df.XMLNS)
     if len(derivanses) < 1:
         # no previous derivans agent can happen
@@ -491,13 +498,6 @@ def process_mets_derivans_agents(mets_file, odem_config: configparser.ConfigPars
         drops +=1
     if drops > 0:
         mproc.write()
-
-# def _clear_provenance_links(mproc):
-#     xp_dv_iif_or_sru = '//dv:links/*[local-name()="iiif" or local-name()="sru"]'
-#     old_dvs = mproc.tree.xpath(xp_dv_iif_or_sru, namespaces=df.XMLNS)
-#     for old_dv in old_dvs:
-#         parent = old_dv.getparent()
-#         parent.remove(old_dv)
 
 
 def validate_mets(mets_file: str, digi_type, ddb_ignores, ddb_min_level):

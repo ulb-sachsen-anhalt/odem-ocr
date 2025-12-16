@@ -68,7 +68,7 @@ class ODEMProcessImpl(oc.ODEMProcess):
         if record is not None and record.local_identifier is not None:
             self.process_identifier = record.local_identifier
         self.export_dir = None
-        self.store: df.LocalStore = None
+        self.store: typing.Optional[df.LocalStore] = None
         self.__mets_file_path: typing.Optional[Path] = None
         self.ocr_files = []
         self._process_start = time.time()
@@ -100,8 +100,7 @@ class ODEMProcessImpl(oc.ODEMProcess):
                                                  oc.CFG_SEC_METS_FGROUP,
                                                  fallback=oc.DEFAULT_FGROUP)
             req_kwargs[dfo.OAI_KWARG_FGROUP_IMG] = load_fgroup
-            loader = df.OAILoader(req_dst_dir, base_url=oai_base_url,
-                                  post_oai=dfm.extract_mets, **req_kwargs)
+            loader = df.OAILoader(base_url=oai_base_url, **req_kwargs)
             loader.store = self.store
             use_file_id = self.configuration.getboolean(oc.CFG_SEC_FLOW,
                                                         oc.CFG_SEC_FLOW_USE_FILEID,
@@ -187,6 +186,7 @@ class ODEMProcessImpl(oc.ODEMProcess):
             languages = self.process_statistics.get(oc.STATS_KEY_LANGS)
         self.logger.info("[%s] map languages '%s'",
                          self.process_identifier, languages)
+        assert languages is not None
         for lang in languages:
             model_entry = model_mappings.get(lang)
             if not model_entry:
@@ -449,6 +449,9 @@ class ODEMProcessImpl(oc.ODEMProcess):
         )
         derivans_image = self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_IMAGE, fallback=None)
         path_logging = self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_LOGDIR, fallback=None)
+        assert self.mets_file_path is not None
+        assert derivans_image is not None
+        assert path_logging is not None
         derivans: df.BaseDerivansManager = df.BaseDerivansManager.create(
             self.mets_file_path,
             container_image_name=derivans_image,

@@ -18,7 +18,7 @@ import digiflow.record as df_r
 #
 # ODEM States
 #
-UNSET = 'n.a.'
+UNSET = 'ocr_open'
 MARK_OCR_OPEN = UNSET
 MARK_OCR_BUSY = 'ocr_busy'
 MARK_OCR_FAIL = 'ocr_fail'

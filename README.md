@@ -127,10 +127,7 @@ Setup and start server process:
 
 ```bash
 cd <local_dir>
-python3.10 -m venv venv
-. venv/bin/activate
-pip install -U pip 
-pip install -r requirements.txt
+
 python cli_record_server.py resources/odem.ocrd.tesseract.ini
 ```
 

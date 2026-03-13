@@ -95,7 +95,7 @@ The command additionally supports the `-e <int>` argument, which allows the scri
 
 ### Local Directory Mode
 
-Assumes locally accessible directory containing only individual pages as images in `<data_dir>/inputdir` and local ODEM clone at `<local_dir>` which contains adopted configurations under `resources/odem.record.local.ini`.
+Assumes locally accessible directory containing only individual pages as .jpg files in `<data_dir>/inputdir` and local ODEM clone at `<local_dir>` which contains adopted configurations under `resources/odem.record.local.ini`.
 
 ```bash
 cd <local_dir>

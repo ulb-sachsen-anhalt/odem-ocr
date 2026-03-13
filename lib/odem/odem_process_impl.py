@@ -616,7 +616,7 @@ class ODEMProcessImpl(oc.ODEMProcess):
                     mapping.copy()
                 tmp_zip_path, size = ODEMProcessImpl.compress_flat(os.path.dirname(work_dir),
                                                                    saf_name)
-                path_export_processing = dfx.move_to_tmp_file(tmp_zip_path, exp_dst)
+                path_export_processing = dfx.move_file_to(tmp_zip_path, exp_dst)
                 export_result = path_export_processing, size
         else:
             raise oc.ODEMException(f'Unsupported export format: {export_format}')

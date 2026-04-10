@@ -597,9 +597,9 @@ class ODEMProcessImpl(oc.ODEMProcess):
                                              oc.CFG_SEC_EXP_OPT_COLLECTION)
             export_result = df.export_data_from(
                 self.mets_file_path,
-                exp_col,
                 saf_final_name=saf_name,
                 export_dst=exp_dst,
+                collection=exp_col,
                 export_map=exp_map,
                 tmp_saf_dir=exp_tmp,
             )

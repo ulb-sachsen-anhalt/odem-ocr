@@ -513,6 +513,69 @@ def test_export_flat_zip(tmp_path):
     assert os.path.exists(zipfilepath) and os.path.getsize(zipfilepath) == 58552
 
 
+@unittest.mock.patch("digiflow.export_data_from", autospec=True)
+def test_export_saf_uses_current_digiflow_api(mock_export_data_from: unittest.mock.Mock,
+                                              tmp_path):
+    """Ensure SAF export call matches current digiflow API."""
+
+    identifier = '1981185920_44046'
+    path_workdir = tmp_path / identifier
+    path_workdir.mkdir()
+    path_tmp_export_dir = tmp_path / 'tmp_export'
+    path_tmp_export_dir.mkdir()
+    path_export_dir = tmp_path / 'export'
+    path_export_dir.mkdir()
+
+    orig_file = TEST_RES / '1981185920_44046.xml'
+    trgt_mets = path_workdir / f'{identifier}.xml'
+    shutil.copyfile(orig_file, trgt_mets)
+
+    log_dir = path_workdir / 'log'
+    log_dir.mkdir()
+    record = df_r.Record('oai:opendata.uni-halle.de:1981185920/44046')
+    oproc = odem.ODEMProcessImpl(record, fixture_configuration(),
+                                 path_workdir,
+                                 log_dir=log_dir, logger=None)
+    model_dir = prepare_tessdata_dir(tmp_path)
+    oproc.configuration.set(oc.CFG_SEC_EXP, oc.CFG_SEC_EXP_OPT_FORMAT,
+                            odem.ExportFormat.SAF)
+    oproc.configuration.set(oc.CFG_SEC_EXP, oc.CFG_SEC_EXP_OPT_TMP, str(path_tmp_export_dir))
+    oproc.configuration.set(oc.CFG_SEC_EXP, oc.CFG_SEC_EXP_OPT_DST, str(path_export_dir))
+    oproc.configuration.set(oc.CFG_SEC_EXP, oc.CFG_SEC_EXP_OPT_COLLECTION, 'my_collection')
+    oproc.configuration.set(
+        odem.CFG_SEC_OCR,
+        odem.CFG_SEC_OCR_OPT_RES_VOL,
+        f'{model_dir}:/usr/local/share/ocrd-resources/ocrd-tesserocr-recognize'
+    )
+    oproc.mets_file_path = str(trgt_mets)
+    oproc.inspect_metadata()
+    expected_saf_name = oproc.artefact_identifier
+    exp_name = oproc.configuration.get(oc.CFG_SEC_EXP, oc.CFG_SEC_EXP_OPT_NAME, fallback=None)
+    exp_prefix = oproc.configuration.get(oc.CFG_SEC_EXP, oc.CFG_SEC_EXP_OPT_PREFIX, fallback=None)
+    if exp_name is not None:
+        expected_saf_name = exp_name
+    if exp_prefix is not None:
+        expected_saf_name = f"{exp_prefix}{expected_saf_name}"
+
+    expected_export_path = str(path_export_dir / f'{identifier}.zip')
+    mock_export_data_from.return_value = expected_export_path, '1MiB'
+
+    # act
+    export_path, export_size = oproc.export_data()
+
+    # assert
+    mock_export_data_from.assert_called_once()
+    assert mock_export_data_from.call_args.args == (Path(trgt_mets),)
+    assert mock_export_data_from.call_args.kwargs.get('collection') == 'my_collection'
+    assert mock_export_data_from.call_args.kwargs.get('saf_final_name') == expected_saf_name
+    assert mock_export_data_from.call_args.kwargs.get('export_dst') == str(path_export_dir)
+    assert mock_export_data_from.call_args.kwargs.get('tmp_saf_dir') == str(path_tmp_export_dir)
+    assert 'export_map' in mock_export_data_from.call_args.kwargs
+    assert mock_export_data_from.call_args.kwargs['export_map'][trgt_mets.name] == 'mets.xml'
+    assert export_path == expected_export_path
+    assert export_size == '1MiB'
+
+
 _PATH_38841 = '/odem-wrk-dir/1981185920_38841/PAGE/'
 
 

@@ -120,7 +120,8 @@ class ODEMMetadataInspecteur:
             raise ODEMNoTypeForOCRException(no_pica_today)
         mets_type = self.types[0]
         if mets_type is None or mets_type not in TYPE_PRINTS_LOGICAL:
-            raise ODEMNoTypeForOCRException(f"{self.process_identifier} unknown: {prime_type}")
+            msg = f"{self.process_identifier} no logical type for OCR: {mets_type}"
+            raise ODEMNoTypeForOCRException(msg)
         return True
 
     @property

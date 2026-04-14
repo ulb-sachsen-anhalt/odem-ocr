@@ -195,8 +195,8 @@ if __name__ == "__main__":
                        odem_process.process_identifier, odem_missmatch.args)
         exc_dict = {exc_label: odem_missmatch.args[0]}
         handler.save_record_state(record.identifier,
-                                  status=odem.MARK_OCR_SKIP,
-                                  **exc_dict)
+                                  odem.MARK_OCR_SKIP,
+                                  INFO=f'{exc_dict}')
     except ODEMException as _odem_exc:
         _err_args = {'ODEMException': _odem_exc.args[0]}
         LOGGER.error("[%s] odem fails with: '%s'", odem_process.process_identifier, _err_args)

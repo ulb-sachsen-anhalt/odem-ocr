@@ -417,7 +417,8 @@ def test_expected_pdf_missing(mock_derivans_init: unittest.mock.Mock,
     oproc.configuration.set(odem.CFG_SEC_OCR, odem.CFG_SEC_OCR_OPT_RES_VOL,
                             f'{model_dir}:/usr/local/share/ocrd-resources/ocrd-tesserocr-recognize')
     oproc.mets_file_path = str(trgt_mets)
-    mock_derivans_start.return_value = df.DerivansResult("dummy", 1.0, "foo")
+    mock_derivans_start.return_value = df.DerivansResult("dummy", 1.0,
+                                                         df.ContainerProcResult(0, "foo"))
 
     # act
     with pytest.raises(odem.ODEMDerivateException) as odem_exc:

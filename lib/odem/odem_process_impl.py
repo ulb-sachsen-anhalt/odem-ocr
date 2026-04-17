@@ -20,7 +20,6 @@ from pathlib import Path
 import numpy as np
 import digiflow as df
 import digiflow.digiflow_export as dfx
-import digiflow.digiflow_metadata as dfm
 import digiflow.digiflow_io as dfo
 import digiflow.record as df_r
 
@@ -430,39 +429,33 @@ class ODEMProcessImpl(oc.ODEMProcess):
 
 
     def create_derivates(self):
-        """Forward PDF-creation to Derivans"""
+        """Forward PDF-creation to Derivans
+        assuming that configuration if relative is set in PROJECT_ROOT"""
 
-        cfg_path_dir_bin = self.configuration.get(oc.CFG_SEC_DERIVANS,
-                                                  'derivans_dir_bin', fallback=None)
-        path_bin = None
-        if cfg_path_dir_bin is not None:
-            path_bin = os.path.join(oc.PROJECT_ROOT, cfg_path_dir_bin)
-        cfg_path_dir_project = self.configuration.get(oc.CFG_SEC_DERIVANS,
-                                                      'derivans_dir_project',
-                                                      fallback=None)
-        path_prj = None
-        if cfg_path_dir_project is not None:
-            path_prj = os.path.join(oc.PROJECT_ROOT, cfg_path_dir_project)
-        path_cfg = os.path.join(
-            oc.PROJECT_ROOT,
-            self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_CONFIG)
-        )
-        derivans_image = self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_IMAGE, fallback=None)
-        path_logging = self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_LOGDIR, fallback=None)
+        path_cfg = Path(self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_CONFIG))
+        if not path_cfg.is_absolute():
+            path_cfg = oc.PROJECT_ROOT / path_cfg
+        derivans_image = self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_IMAGE,
+                                                fallback=None)
+        path_logging_cfg = self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_LOGDIR,
+                                              fallback=None)
+        path_logging = None
+        if path_logging_cfg is not None:
+            path_logging = Path(path_logging_cfg)
+            if not path_logging.is_absolute():
+                path_logging = oc.PROJECT_ROOT / path_logging
         assert self.mets_file_path is not None
         assert derivans_image is not None
         assert path_logging is not None
         derivans: df.BaseDerivansManager = df.BaseDerivansManager.create(
             self.mets_file_path,
-            container_image_name=derivans_image,
-            path_binary=path_bin,
             path_configuration=path_cfg,
-            path_mvn_project=path_prj,
             path_logging=path_logging,
+            container_image_name=derivans_image
         )
         if self.configuration.has_option(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_FGROUP):
             the_fgroup = self.configuration.get(oc.CFG_SEC_DERIVANS, oc.CFG_SEC_DERIVANS_FGROUP)
-            derivans.images = the_fgroup
+            derivans.additional_args += f'--file-group {the_fgroup}'
         derivans.init()
         # be cautious
         try:

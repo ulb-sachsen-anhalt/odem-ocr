@@ -15,7 +15,7 @@ import lib.odem.commons as oc
 # contains PICA types like
 # Aa, AZ, AF ...
 PICA_PRINT_MARKS = ['a', 'f', 'F', 'Z', 'B']
-TYPE_PRINTS_LOGICAL = ['monograph', 'volume', 'issue', 'additional']
+TYPE_PRINTS_LOGICAL = ['monograph', 'volume', 'issue', 'additional', 'manuscript']
 PPN_GVK = 'gvk-ppn'
 RECORD_IDENTIFIER = 'recordIdentifier'
 Q_XLINK_HREF = '{http://www.w3.org/1999/xlink}href'

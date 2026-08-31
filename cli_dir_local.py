@@ -26,7 +26,6 @@ if __name__ == "__main__":
     PARSER.add_argument(
         "-c",
         "--config",
-        required=False,
         help="path to configuration file")
     PARSER.add_argument(
         f"-{odem.ARG_S_EXECS}",
@@ -46,6 +45,12 @@ if __name__ == "__main__":
         help="""Map ISO 639-3 language code to local ocr model configuration label.\n
         For example "deu": "frk.traineddata".
         May include multiple, comma-separated mappings (default:unset)""")
+    PARSER.add_argument(
+        "--output-dir",
+        required=False,
+        default=None,
+        help=("optional path to store final OCR results; "
+              "if set, directory is recreated before processing"))
     ARGS = vars(PARSER.parse_args())
 
     # check some pre-conditions
@@ -85,11 +90,20 @@ if __name__ == "__main__":
         if os.path.exists(req_dst_dir):
             shutil.rmtree(req_dst_dir)
         os.makedirs(req_dst_dir, exist_ok=True)
+
+        output_dir = None
+        if ARGS.get("output_dir"):
+            output_dir = os.path.abspath(ARGS["output_dir"])
+            if os.path.exists(output_dir):
+                shutil.rmtree(output_dir)
+            os.makedirs(output_dir, exist_ok=True)
+
         proc_type = CFG.get(odem.CFG_SEC_OCR, 'workflow_type', fallback=odem.DEFAULT_WORKLFOW)
         odem_process: odem.ODEMProcessImpl = odem.ODEMProcessImpl(record=None, configuration=CFG,
                                                                   work_dir=ROOT_PATH,
                                                                   log_dir=log_dir,
                                                                   logger=LOGGER)
+        odem_process.export_dir = output_dir
         local_images = odem_process.get_local_image_paths(image_local_dir=ROOT_PATH)
         odem_process.process_statistics[odem.STATS_KEY_N_PAGES] = len(local_images)
         odem_process.process_statistics[odem.STATS_KEY_N_OCRABLE] = 0

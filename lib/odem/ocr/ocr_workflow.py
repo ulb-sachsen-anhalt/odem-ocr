@@ -321,11 +321,22 @@ class OCRDPageParallel(OCRWorkflow):
         n_candidates = len(self.odem_process.ocr_candidates)
         if len(the_outcomes) == 0 and n_candidates > 0:
             raise oc.ODEMException(f"No OCR result for {n_candidates} candidates created!")
-        final_fulltext_dir = os.path.join(self.odem_process.work_dir_root,
-                                          oc.FILEGROUP_FULLTEXT)
-        if not os.path.isdir(final_fulltext_dir):
-            os.makedirs(final_fulltext_dir, exist_ok=True)
-        self.ocr_results = odem_fmt.convert_to_output_format(the_outcomes, final_fulltext_dir)
+        self.ocr_results = []
+        if self.odem_process.local_mode and not self.odem_process.export_dir:
+            # Local default: keep final OCR files next to source images.
+            for ocr_result in the_outcomes:
+                result_dir = os.path.dirname(ocr_result.local_path)
+                if not os.path.isdir(result_dir):
+                    os.makedirs(result_dir, exist_ok=True)
+                self.ocr_results.extend(odem_fmt.convert_to_output_format([ocr_result], result_dir))
+        else:
+            final_fulltext_dir = os.path.join(self.odem_process.work_dir_root,
+                                              oc.FILEGROUP_FULLTEXT)
+            if self.odem_process.local_mode and self.odem_process.export_dir:
+                final_fulltext_dir = str(self.odem_process.export_dir)
+            if not os.path.isdir(final_fulltext_dir):
+                os.makedirs(final_fulltext_dir, exist_ok=True)
+            self.ocr_results = odem_fmt.convert_to_output_format(the_outcomes, final_fulltext_dir)
         self.logger.info("[%s] converted %d ocr results to alto",
                          self.odem_process.process_identifier, len(self.ocr_results))
         strip_tags = self.config.getlist(oc.CFG_SEC_OCR, 'strip_tags')
